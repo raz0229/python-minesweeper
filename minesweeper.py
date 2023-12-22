@@ -8,6 +8,7 @@ import random
 import platform
 import time
 from datetime import time, date, datetime
+import getopt, sys
 
 SIZE_X = 10
 SIZE_Y = 10
@@ -20,6 +21,9 @@ BTN_CLICK = "<Button-1>"
 BTN_FLAG = "<Button-2>" if platform.system() == 'Darwin' else "<Button-3>"
 
 window = None
+argumentList = sys.argv[1:]
+options = "s:"
+long_options = ["simulate"]
 
 class Minesweeper:
 
@@ -41,6 +45,7 @@ class Minesweeper:
         self.tk = tk
         self.frame = Frame(self.tk)
         self.frame.pack()
+        self.NUMBER_OF_SIMULATIONS = 10
 
         # set up labels/UI
         self.labels = {
@@ -54,6 +59,20 @@ class Minesweeper:
 
         self.restart() # start game
         self.updateTimer() # init timer
+        try:
+            # Parsing argument
+            arguments, values = getopt.getopt(argumentList, options, long_options)
+
+            # checking each argument
+            for currentArgument, currentValue in arguments:
+                if currentArgument in ("-s", "--simulate"):
+                    if (sys.argv[2]):
+                        self.NUMBER_OF_SIMULATIONS = int(sys.argv[2])
+                        self.simulateCornerClicks() # test Mustafa
+
+        except getopt.error as err:
+            # output error, and return with an error code
+            print (str(err))
 
     def setup(self):
         # create flag and clicked tile variables
@@ -98,6 +117,7 @@ class Minesweeper:
                 tile["button"].grid( row = x+1, column = y ) # offset by 1 row for timer
 
                 self.tiles[x][y] = tile
+                
 
         # loop again to find nearby mines and display number on tile
         for x in range(0, SIZE_X):
@@ -110,6 +130,26 @@ class Minesweeper:
     def restart(self):
         self.setup()
         self.refreshLabels()
+
+    # [forked] @author: raz0229
+    def simulateCornerClicks(self):
+        detected = 0
+        for i in range(self.NUMBER_OF_SIMULATIONS):
+            #self.onClick(self.tiles[0][0]) # upper-left corner
+            #self.onClick(self.tiles[0][9]) # upper-right corner
+            #self.onClick(self.tiles[9][0]) # lower-left corner
+            #self.onClick(self.tiles[9][9]) # lower-right corner
+            if (self.tiles[0][0]['isMine'] or self.tiles[0][9]['isMine'] or self.tiles[9][0]['isMine'] or self.tiles[9][9]['isMine'] ):
+                detected += 1
+                print(i, ' try: [ ✔️ ] Mine DETECTED in corner')
+            else:
+                print(i, ' try: [ ❌ ] MINE NOT detected in corners')
+            self.restart()
+            self.refreshLabels()
+
+        print('\n\n[INFO] Probability of Mine being in corner P(M): ', detected, '/' ,self.NUMBER_OF_SIMULATIONS)
+        print('[INFO] Probability of Mine NOT being in corner P(!M): ', 1 - (detected / self.NUMBER_OF_SIMULATIONS))
+
 
     def refreshLabels(self):
         self.labels["flags"].config(text = "Flags: "+str(self.flagCount))
@@ -168,6 +208,7 @@ class Minesweeper:
         return lambda Button: self.onRightClick(self.tiles[x][y])
 
     def onClick(self, tile):
+        print('tile: ', tile)
         if self.startTime == None:
             self.startTime = datetime.now()
 
